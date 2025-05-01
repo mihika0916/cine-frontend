@@ -1,5 +1,23 @@
+// --- src/pages/ReportPage.js ---
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import {
+  Container,
+  Typography,
+  Chip,
+  Button,
+  Stack,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Grid,
+  Card,
+  CardMedia,
+  CardContent,
+  Box,
+} from "@mui/material";
 
 function ReportPage() {
   const [reportData, setReportData] = useState([]);
@@ -24,29 +42,19 @@ function ReportPage() {
   };
 
   const fetchReport = () => {
-    if (selectedGenre) {
-      axios
-        .get("http://127.0.0.1:5000/report-by-genre-ps", {
-          params: {
-            genre_id: selectedGenre.id,
-            range: timeFilter,
-          },
-        })
-        .then((res) => setReportData(res.data))
-        .catch((err) => console.error("Report error:", err));
-    } else {
-      axios
-        .get("http://127.0.0.1:5000/report-all", {
-          params: { range: timeFilter },
-        })
-        .then((res) => setReportData(res.data))
-        .catch((err) => console.error("Report error:", err));
-    }
-  };
+    const url = selectedGenre
+      ? "http://127.0.0.1:5000/report-by-genre-ps"
+      : "http://127.0.0.1:5000/report-all";
 
-  const handleTimeChange = (range) => setTimeFilter(range);
-  const handleGenreClick = (genre) =>
-    setSelectedGenre((prev) => (prev?.id === genre.id ? null : genre));
+    const params = selectedGenre
+      ? { genre_id: selectedGenre.id, range: timeFilter }
+      : { range: timeFilter };
+
+    axios
+      .get(url, { params })
+      .then((res) => setReportData(res.data))
+      .catch((err) => console.error("Report error:", err));
+  };
 
   const handleEditClick = (rating, index) => {
     setEditingRating({ ...rating, index });
@@ -55,7 +63,7 @@ function ReportPage() {
   const handleEditSave = () => {
     const { id, score, review } = editingRating;
     if (!score || score < 1 || score > 10 || review.trim() === "") {
-      alert("Please provide a valid score (1–10) and non-empty review.");
+      alert("Please provide a valid score (1–10) and review.");
       return;
     }
 
@@ -77,206 +85,156 @@ function ReportPage() {
       .catch((err) => console.error("Delete failed:", err));
   };
 
+  const handleGenreClick = (genre) =>
+    setSelectedGenre((prev) => (prev?.id === genre.id ? null : genre));
+
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2 style={{ marginBottom: "1rem" }}>
+    <Container sx={{ py: 4 }}>
+      <Typography variant="h5" gutterBottom>
         {selectedGenre
           ? `Ratings for ${selectedGenre.name}`
           : "All Ratings Report"}
-      </h2>
+      </Typography>
 
-      <div style={{ marginBottom: "1rem" }}>
-        <strong>Filter by Genre:</strong>
-        <div
-          style={{
-            display: "flex",
-            gap: "10px",
-            flexWrap: "wrap",
-            marginTop: "8px",
-          }}
-        >
-          {genres.map((genre) => (
-            <button
-              key={genre.id}
-              onClick={() => handleGenreClick(genre)}
-              style={{
-                padding: "6px 12px",
-                borderRadius: "20px",
-                border: "none",
-                backgroundColor:
-                  selectedGenre?.id === genre.id ? "#2225c1" : "#eee",
-                color: selectedGenre?.id === genre.id ? "#fff" : "#000",
-                cursor: "pointer",
-              }}
-            >
-              {genre.name}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Genre Filter */}
+      <Typography variant="subtitle1" gutterBottom>
+        Filter by Genre:
+      </Typography>
+      <Stack
+        direction="row"
+        spacing={1}
+        flexWrap="wrap"
+        useFlexGap
+        sx={{ mb: 3, rowGap: 3, columnGap: 1 }}
+      >
+        {genres.map((genre) => (
+          <Chip
+            key={genre.id}
+            label={genre.name}
+            clickable
+            color={selectedGenre?.id === genre.id ? "primary" : "default"}
+            onClick={() => handleGenreClick(genre)}
+          />
+        ))}
+      </Stack>
 
-      <div style={{ marginBottom: "1.5rem" }}>
-        <strong>Filter by Time:</strong>
-        <div style={{ display: "flex", gap: "10px", marginTop: "0.5rem" }}>
-          {["all", "week", "day"].map((range) => (
-            <button
-              key={range}
-              onClick={() => handleTimeChange(range)}
-              style={{
-                padding: "8px 14px",
-                backgroundColor: timeFilter === range ? "#2225c1" : "#eee",
-                color: timeFilter === range ? "#fff" : "#000",
-                border: "none",
-                borderRadius: "5px",
-                cursor: "pointer",
-              }}
-            >
-              {range === "all"
+      {/* Time Filter */}
+      <Typography variant="subtitle1" gutterBottom>
+        Filter by Time:
+      </Typography>
+      <Stack direction="row" spacing={1} sx={{ mb: 4 }}>
+        {["all", "week", "day"].map((range) => (
+          <Chip
+            key={range}
+            label={
+              range === "all"
                 ? "All Time"
                 : range === "week"
                 ? "Last Week"
-                : "Last 24h"}
-            </button>
-          ))}
-        </div>
-      </div>
+                : "Last 24h"
+            }
+            clickable
+            color={timeFilter === range ? "primary" : "default"}
+            onClick={() => setTimeFilter(range)}
+          />
+        ))}
+      </Stack>
 
+      {/* Ratings */}
       {reportData.length > 0 ? (
-        <ul style={{ paddingLeft: "1rem" }}>
+        <Grid container spacing={3}>
           {reportData.map((r, i) => (
-            <li
-              key={i}
-              style={{
-                marginBottom: "0.75rem",
-                padding: "0.5rem",
-                border: "1px solid #ccc",
-                borderRadius: "8px",
-              }}
-            >
-              <strong>{r.movie_title}</strong> – <em>{r.score}/10</em>
-              <br />
-              {r.review || "No review"}
-              <br />
-              <span style={{ fontSize: "0.9rem", color: "gray" }}>
-                Watched on {new Date(r.watched_at).toLocaleDateString()}
-              </span>
-              <div style={{ marginTop: "0.5rem" }}>
-                <button
-                  onClick={() => handleEditClick(r, i)}
-                  style={{
-                    marginRight: "10px",
-                    backgroundColor: "#2225c1",
-                    color: "#fff",
-                    padding: "5px 10px",
-                    border: "none",
-                    borderRadius: "5px",
-                    cursor: "pointer",
-                  }}
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(r.id)}
-                  style={{
-                    backgroundColor: "#ff4d4f",
-                    color: "#fff",
-                    padding: "5px 10px",
-                    border: "none",
-                    borderRadius: "5px",
-                    cursor: "pointer",
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-            </li>
+            <Grid item xs={12} key={i}>
+              <Card sx={{ display: "flex", minHeight: 180 }}>
+                <CardMedia
+                  component="img"
+                  image={
+                    r.poster_path
+                      ? `https://image.tmdb.org/t/p/w300${r.poster_path}`
+                      : "https://via.placeholder.com/300x450?text=No+Image"
+                  }
+                  alt={r.movie_title}
+                  sx={{ width: 120, borderRadius: "4px 0 0 4px" }}
+                />
+                <CardContent sx={{ flex: 1 }}>
+                  <Typography variant="h6">{r.movie_title}</Typography>
+                  <Typography variant="body1">
+                    <strong>{r.score}/10</strong> —{" "}
+                    {r.review || "No review provided"}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 1 }}
+                  >
+                    Watched on {new Date(r.watched_at).toLocaleDateString()}
+                  </Typography>
+
+                  <Box sx={{ mt: 1 }}>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={() => handleEditClick(r, i)}
+                      sx={{ mr: 1 }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="small"
+                      color="error"
+                      variant="outlined"
+                      onClick={() => handleDelete(r.id)}
+                    >
+                      Delete
+                    </Button>
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
           ))}
-        </ul>
+        </Grid>
       ) : (
-        <p style={{ marginTop: "1rem" }}>
-          No movies found
-          {selectedGenre ? ` for ${selectedGenre.name}` : ""} in this time
-          range.
-        </p>
+        <Typography sx={{ mt: 3 }}>
+          No ratings found for this filter.
+        </Typography>
       )}
 
-      {editingRating && (
-        <div
-          style={{
-            position: "fixed",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            backgroundColor: "#fff",
-            padding: "2rem",
-            boxShadow: "0 0 10px rgba(0,0,0,0.2)",
-            borderRadius: "10px",
-            zIndex: 999,
-          }}
-        >
-          <h3>Edit Rating</h3>
-          <label>
-            Score (1–10):{" "}
-            <input
-              type="number"
-              min="1"
-              max="10"
-              value={editingRating.score}
-              onChange={(e) =>
-                setEditingRating({
-                  ...editingRating,
-                  score: Number(e.target.value),
-                })
-              }
-              style={{ padding: "6px", margin: "6px" }}
-            />
-          </label>
-          <br />
-          <label>
-            Review:{" "}
-            <textarea
-              value={editingRating.review}
-              onChange={(e) =>
-                setEditingRating({
-                  ...editingRating,
-                  review: e.target.value,
-                })
-              }
-              style={{ padding: "6px", width: "100%", height: "80px" }}
-            />
-          </label>
-          <br />
-          <div style={{ marginTop: "1rem" }}>
-            <button
-              onClick={handleEditSave}
-              style={{
-                backgroundColor: "#2225c1",
-                color: "#fff",
-                padding: "8px 14px",
-                marginRight: "10px",
-                border: "none",
-                borderRadius: "5px",
-                cursor: "pointer",
-              }}
-            >
-              Save
-            </button>
-            <button
-              onClick={() => setEditingRating(null)}
-              style={{
-                backgroundColor: "#ccc",
-                padding: "8px 14px",
-                border: "none",
-                borderRadius: "5px",
-                cursor: "pointer",
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+      {/* Edit Modal */}
+      <Dialog open={!!editingRating} onClose={() => setEditingRating(null)}>
+        <DialogTitle>Edit Rating</DialogTitle>
+        <DialogContent>
+          <TextField
+            type="number"
+            label="Score (1–10)"
+            fullWidth
+            value={editingRating?.score || ""}
+            onChange={(e) =>
+              setEditingRating({
+                ...editingRating,
+                score: Number(e.target.value),
+              })
+            }
+            sx={{ mb: 2 }}
+          />
+          <TextField
+            label="Review"
+            fullWidth
+            multiline
+            rows={4}
+            value={editingRating?.review || ""}
+            onChange={(e) =>
+              setEditingRating({ ...editingRating, review: e.target.value })
+            }
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditingRating(null)}>Cancel</Button>
+          <Button variant="contained" onClick={handleEditSave}>
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
   );
 }
 

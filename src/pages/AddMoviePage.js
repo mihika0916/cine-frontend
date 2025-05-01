@@ -3,6 +3,15 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import MovieCard from "../components/MovieCard";
 
+import {
+  Container,
+  Typography,
+  TextField,
+  Button,
+  Grid,
+  Box,
+} from "@mui/material";
+
 function AddMoviePage() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
@@ -29,52 +38,37 @@ function AddMoviePage() {
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2 style={{ marginBottom: "1rem" }}>Search for a Movie</h2>
+    <Container maxWidth="lg" sx={{ paddingTop: "2rem" }}>
+      <Typography variant="h5" gutterBottom>
+        Search for a Movie
+      </Typography>
 
-      <div style={{ display: "flex", gap: "10px", marginBottom: "2rem" }}>
-        <input
-          type="text"
+      <Box sx={{ display: "flex", gap: 2, mb: 4 }}>
+        <TextField
+          label="Enter movie title"
+          fullWidth
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Enter movie title"
-          style={{
-            flex: "1",
-            padding: "10px",
-            fontSize: "1rem",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-          }}
+          variant="outlined"
         />
-        <button
+        <Button
+          variant="contained"
+          color="primary"
           onClick={handleSearch}
-          style={{
-            padding: "10px 16px",
-            fontSize: "1rem",
-            backgroundColor: "#2225c1",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
+          sx={{ minWidth: "100px" }}
         >
           Search
-        </button>
-      </div>
+        </Button>
+      </Box>
 
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          justifyContent: "center",
-          gap: "20px",
-        }}
-      >
+      <Grid container spacing={3} justifyContent="flex-start">
         {results.map((movie) => (
-          <MovieCard key={movie.id} movie={movie} onClick={handleSelect} />
+          <Grid item key={movie.id}>
+            <MovieCard movie={movie} onClick={handleSelect} />
+          </Grid>
         ))}
-      </div>
-    </div>
+      </Grid>
+    </Container>
   );
 }
 

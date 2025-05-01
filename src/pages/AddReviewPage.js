@@ -1,40 +1,69 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
+import {
+  Box,
+  Typography,
+  Container,
+  Card,
+  CardMedia,
+  CardContent,
+  TextField,
+  Button,
+  Chip,
+  Rating,
+} from "@mui/material";
+
+// Genre ID → Name mapping
+const genreMap = {
+  28: "Action",
+  12: "Adventure",
+  16: "Animation",
+  35: "Comedy",
+  80: "Crime",
+  99: "Documentary",
+  18: "Drama",
+  10751: "Family",
+  14: "Fantasy",
+  36: "History",
+  27: "Horror",
+  10402: "Music",
+  9648: "Mystery",
+  10749: "Romance",
+  878: "Science Fiction",
+  10770: "TV Movie",
+  53: "Thriller",
+  10752: "War",
+  37: "Western",
+};
 
 function AddReviewPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const movie = location.state?.movie;
-  console.log("Movie received:", movie);
 
-  const [score, setScore] = useState("");
+  const [score, setScore] = useState(0);
   const [review, setReview] = useState("");
 
   if (!movie) {
     return (
-      <div style={{ padding: "2rem" }}>
-        <h2>No movie selected.</h2>
-        <button onClick={() => navigate("/add-movie")}>Back to Search</button>
-      </div>
+      <Container sx={{ paddingTop: "2rem" }}>
+        <Typography variant="h5">No movie selected.</Typography>
+        <Button onClick={() => navigate("/add-movie")} sx={{ mt: 2 }}>
+          Back to Search
+        </Button>
+      </Container>
     );
   }
 
   const handleSubmit = async () => {
     if (!score) {
-      alert("Please enter a score.");
+      alert("Please give a rating.");
       return;
     }
 
-    if (!movie.genre_ids || movie.genre_ids.length === 0) {
-      const proceed = window.confirm(
-        "This movie has no genre information from TMDB. Do you want to continue?"
-      );
-      if (!proceed) return;
-    }
-
     try {
-      // Save movie
+      // Add movie to DB
       await axios.post("http://127.0.0.1:5000/add-movie", {
         tmdb_id: movie.id,
         title: movie.title,
@@ -43,10 +72,10 @@ function AddReviewPage() {
         poster_path: movie.poster_path || "",
       });
 
-      // Save rating
+      // Add rating (scale to 10 if needed)
       await axios.post("http://127.0.0.1:5000/rate", {
         tmdb_id: movie.id,
-        score: parseInt(score),
+        score: score * 2, // optional: if you want to save it out of 10 in the DB
         review,
       });
 
@@ -59,78 +88,76 @@ function AddReviewPage() {
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2 style={{ marginBottom: "1rem" }}>Add Review</h2>
+    <Container sx={{ paddingTop: "2rem" }}>
+      <Typography variant="h5" gutterBottom>
+        Add Review
+      </Typography>
 
-      <div style={{ display: "flex", gap: "2rem", alignItems: "flex-start" }}>
-        <img
-          src={
-            movie.poster_path
-              ? `https://image.tmdb.org/t/p/w300${movie.poster_path}`
-              : "https://via.placeholder.com/300x450?text=No+Image"
-          }
-          alt={movie.title}
-          style={{ width: "200px", borderRadius: "10px" }}
-        />
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "column", md: "row" },
+          gap: 4,
+        }}
+      >
+        {/* Movie Poster & Meta */}
+        <Card sx={{ width: 250 }}>
+          <CardMedia
+            component="img"
+            image={
+              movie.poster_path
+                ? `https://image.tmdb.org/t/p/w300${movie.poster_path}`
+                : "https://via.placeholder.com/300x450?text=No+Image"
+            }
+            alt={movie.title}
+          />
+          <CardContent>
+            <Typography variant="h6">{movie.title}</Typography>
+            <Typography variant="body2" color="text.secondary">
+              {movie.release_date?.slice(0, 4) || "Unknown"}
+            </Typography>
+            <Box sx={{ mt: 1, display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+              {movie.genre_ids?.map((id) => (
+                <Chip key={id} label={genreMap[id] || "Other"} size="small" />
+              ))}
+            </Box>
+          </CardContent>
+        </Card>
 
-        <div style={{ flex: 1 }}>
-          <h3>
-            {movie.title} ({movie.release_date?.slice(0, 4) || "Unknown"})
-          </h3>
-
-          <label>Rating (1–10):</label>
-          <br />
-          <input
-            type="number"
+        {/* Rating and Review Input */}
+        <Box sx={{ flex: 1 }}>
+          <Typography>Rating (0–5 stars):</Typography>
+          <Rating
+            name="movie-rating"
+            precision={0.5}
             value={score}
-            min={1}
-            max={10}
-            onChange={(e) => setScore(e.target.value)}
-            style={{
-              width: "80px",
-              padding: "8px",
-              fontSize: "1rem",
-              marginTop: "4px",
-            }}
+            onChange={(e, newValue) => setScore(newValue)}
           />
 
-          <br />
-          <br />
-          <label>Review:</label>
-          <br />
-          <textarea
-            rows="4"
-            cols="50"
+          <Typography sx={{ mt: 2 }}>Your Review:</Typography>
+          <TextField
+            multiline
+            rows={4}
+            fullWidth
+            variant="outlined"
             value={review}
             onChange={(e) => setReview(e.target.value)}
-            style={{
-              padding: "10px",
-              fontSize: "1rem",
-              borderRadius: "6px",
-              border: "1px solid #ccc",
-              resize: "vertical",
-            }}
+            placeholder="What did you think of the movie?"
+            sx={{ mt: 1 }}
           />
-          <br />
-          <br />
 
-          <button
+          <Button
+            variant="contained"
+            color="primary"
+            sx={{ mt: 3 }}
             onClick={handleSubmit}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#2225c1",
-              color: "#fff",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontSize: "1rem",
-            }}
           >
             Submit Review
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </Box>
+      </Box>
+    </Container>
   );
 }
+
 export default AddReviewPage;
