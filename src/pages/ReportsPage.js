@@ -36,15 +36,15 @@ function ReportPage() {
 
   const fetchGenres = () => {
     axios
-      .get("http://127.0.0.1:5000/genres")
+      .get("https://cine-backend.onrender.com/genres")
       .then((res) => setGenres(res.data))
       .catch((err) => console.error("Error loading genres:", err));
   };
 
   const fetchReport = () => {
     const url = selectedGenre
-      ? "http://127.0.0.1:5000/report-by-genre-ps"
-      : "http://127.0.0.1:5000/report-all";
+      ? "https://cine-backend.onrender.com/report-by-genre-ps"
+      : "https://cine-backend.onrender.com/report-all";
 
     const params = selectedGenre
       ? { genre_id: selectedGenre.id, range: timeFilter }
@@ -68,7 +68,7 @@ function ReportPage() {
     }
 
     axios
-      .put(`http://127.0.0.1:5000/rate/${id}`, { score, review })
+      .put(`https://cine-backend.onrender.com/rate/${id}`, { score, review })
       .then(() => {
         setEditingRating(null);
         fetchReport();
@@ -80,7 +80,7 @@ function ReportPage() {
     if (!window.confirm("Are you sure you want to delete this rating?")) return;
 
     axios
-      .delete(`http://127.0.0.1:5000/rate/${id}`)
+      .delete(`https://cine-backend.onrender.com/rate/${id}`)
       .then(() => fetchReport())
       .catch((err) => console.error("Delete failed:", err));
   };
