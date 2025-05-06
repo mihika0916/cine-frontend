@@ -64,7 +64,7 @@ function AddReviewPage() {
 
     try {
       // Add movie to DB
-      await axios.post("https://cine-backend.onrender.com/add-movie", {
+      await axios.post("http://127.0.0.1:5000/add-movie", {
         tmdb_id: movie.id,
         title: movie.title,
         genre_ids: movie.genre_ids || [],
@@ -73,7 +73,7 @@ function AddReviewPage() {
       });
 
       // Add rating (scale to 10 if needed)
-      await axios.post("https://cine-backend.onrender.com/rate", {
+      await axios.post("http://127.0.0.1:5000/rate-ps", {
         tmdb_id: movie.id,
         score: score * 2, // optional: if you want to save it out of 10 in the DB
         review,

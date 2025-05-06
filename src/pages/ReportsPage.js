@@ -1,4 +1,4 @@
-// --- src/pages/ReportPage.js ---
+// src/pages/ReportPage.js
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {
@@ -17,14 +17,17 @@ import {
   CardMedia,
   CardContent,
   Box,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 
 function ReportPage() {
   const [reportData, setReportData] = useState([]);
   const [timeFilter, setTimeFilter] = useState("all");
-  const [selectedGenre, setSelectedGenre] = useState(null);
+  const [selectedGenres, setSelectedGenres] = useState([]);
   const [genres, setGenres] = useState([]);
   const [editingRating, setEditingRating] = useState(null);
+  const [matchMode, setMatchMode] = useState("any");
 
   useEffect(() => {
     fetchGenres();
@@ -32,28 +35,45 @@ function ReportPage() {
 
   useEffect(() => {
     fetchReport();
-  }, [timeFilter, selectedGenre]);
+  }, [timeFilter, selectedGenres, matchMode]);
 
   const fetchGenres = () => {
     axios
-      .get("https://cine-backend.onrender.com/genres")
+      .get("http://127.0.0.1:5000/genres")
       .then((res) => setGenres(res.data))
       .catch((err) => console.error("Error loading genres:", err));
   };
 
   const fetchReport = () => {
-    const url = selectedGenre
-      ? "https://cine-backend.onrender.com/report-by-genre-ps"
-      : "https://cine-backend.onrender.com/report-all";
+    const url =
+      selectedGenres.length > 0
+        ? "http://127.0.0.1:5000/report-by-genre-ps"
+        : "http://127.0.0.1:5000/report-all";
 
-    const params = selectedGenre
-      ? { genre_id: selectedGenre.id, range: timeFilter }
-      : { range: timeFilter };
+    if (selectedGenres.length > 0) {
+      const params = new URLSearchParams();
+      selectedGenres.forEach((g) => params.append("genre_ids", g.id));
+      params.append("match", matchMode);
+      params.append("range", timeFilter);
 
-    axios
-      .get(url, { params })
-      .then((res) => setReportData(res.data))
-      .catch((err) => console.error("Report error:", err));
+      axios
+        .get(url + "?" + params.toString())
+        .then((res) => setReportData(res.data))
+        .catch((err) => console.error("Report error:", err));
+    } else {
+      axios
+        .get(url, { params: { range: timeFilter } })
+        .then((res) => setReportData(res.data))
+        .catch((err) => console.error("Report error:", err));
+    }
+  };
+
+  const toggleGenre = (genre) => {
+    setSelectedGenres((prev) =>
+      prev.some((g) => g.id === genre.id)
+        ? prev.filter((g) => g.id !== genre.id)
+        : [...prev, genre]
+    );
   };
 
   const handleEditClick = (rating, index) => {
@@ -68,7 +88,7 @@ function ReportPage() {
     }
 
     axios
-      .put(`https://cine-backend.onrender.com/rate/${id}`, { score, review })
+      .put(`http://127.0.0.1:5000/rate-ps/${id}`, { score, review })
       .then(() => {
         setEditingRating(null);
         fetchReport();
@@ -80,19 +100,16 @@ function ReportPage() {
     if (!window.confirm("Are you sure you want to delete this rating?")) return;
 
     axios
-      .delete(`https://cine-backend.onrender.com/rate/${id}`)
+      .delete(`http://127.0.0.1:5000/rate-ps/${id}`)
       .then(() => fetchReport())
       .catch((err) => console.error("Delete failed:", err));
   };
 
-  const handleGenreClick = (genre) =>
-    setSelectedGenre((prev) => (prev?.id === genre.id ? null : genre));
-
   return (
     <Container sx={{ py: 4 }}>
       <Typography variant="h5" gutterBottom>
-        {selectedGenre
-          ? `Ratings for ${selectedGenre.name}`
+        {selectedGenres.length > 0
+          ? `Ratings for ${selectedGenres.map((g) => g.name).join(", ")}`
           : "All Ratings Report"}
       </Typography>
 
@@ -100,23 +117,31 @@ function ReportPage() {
       <Typography variant="subtitle1" gutterBottom>
         Filter by Genre:
       </Typography>
-      <Stack
-        direction="row"
-        spacing={1}
-        flexWrap="wrap"
-        useFlexGap
-        sx={{ mb: 3, rowGap: 3, columnGap: 1 }}
-      >
+      <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 2 }}>
         {genres.map((genre) => (
           <Chip
             key={genre.id}
             label={genre.name}
             clickable
-            color={selectedGenre?.id === genre.id ? "primary" : "default"}
-            onClick={() => handleGenreClick(genre)}
+            color={
+              selectedGenres.some((g) => g.id === genre.id)
+                ? "primary"
+                : "default"
+            }
+            onClick={() => toggleGenre(genre)}
           />
         ))}
       </Stack>
+
+      <ToggleButtonGroup
+        value={matchMode}
+        exclusive
+        onChange={(_, newVal) => newVal && setMatchMode(newVal)}
+        sx={{ mb: 3 }}
+      >
+        <ToggleButton value="any">Match Any</ToggleButton>
+        <ToggleButton value="all">Match All</ToggleButton>
+      </ToggleButtonGroup>
 
       {/* Time Filter */}
       <Typography variant="subtitle1" gutterBottom>
